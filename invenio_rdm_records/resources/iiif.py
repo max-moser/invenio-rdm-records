@@ -18,7 +18,11 @@ import marshmallow as ma
 import requests
 from flask import Response, current_app, g, request, send_file
 from flask_cors import cross_origin
-from flask_iiif.errors import MultimediaImageNotFound
+from flask_iiif.errors import (
+    MultimediaError,
+    MultimediaImageFormatError,
+    MultimediaImageNotFound,
+)
 from flask_resources import (
     HTTPJSONException,
     JSONSerializer,
@@ -112,6 +116,19 @@ class IIIFResourceConfig(ResourceConfig, ConfiguratorMixin):
             lambda e: HTTPJSONException(
                 code=404, description=_("The requested image cannot be found.")
             )
+        ),
+        MultimediaImageFormatError: create_error_handler(
+            lambda e: HTTPJSONException(
+                code=400,
+                description=_(
+                    "The requested format '%(format)s' is not supported. Please try one of: %(supported_formats)s",
+                    format=e.requested_format,
+                    supported_formats=e.supported_formats,
+                ),
+            )
+        ),
+        MultimediaError: create_error_handler(
+            lambda e: HTTPJSONException(code=400, message=e.message)
         ),
     }
 
